@@ -4,19 +4,18 @@
 #include <iostream>
 #include <string>
 
-constexpr size_t kTagHeaderIdentifierSize = 3;
-constexpr size_t kTagSizeBytes = 4;
-
 TagHeader::TagHeader(
     char version,
     char revision,
     char flags,
-    uint32_t tag_size
+    uint32_t tag_size,
+    uint32_t extended_header_size
 )
     : version_(version)
     , revision_(revision)
     , flags_(flags)
     , tag_size_(tag_size)
+    , extended_header_size_(extended_header_size)
 {}
 
 std::string GetBitString(const char byte) {
@@ -43,6 +42,18 @@ void TagHeader::Output() const {
     std::cout << "-------------\n";
 }
 
+uint32_t TagHeader::GetTagSize() const {
+    return tag_size_;
+}
+
+uint32_t TagHeader::GetExtendedHeaderSize() const {
+    return extended_header_size_;
+}
+
+bool HasExtendedHeader(const char flags) {
+    return (flags >> 6) & 1;
+}
+
 TagHeader* ParseTagHeader(std::ifstream& stream) {
     char identifier[kTagHeaderIdentifierSize];
     
@@ -67,7 +78,14 @@ TagHeader* ParseTagHeader(std::ifstream& stream) {
     stream.get(flags);
     stream.read(size_buffer, kTagSizeBytes);
 
-    int32_t tag_size = SynchsafeToInt32(BufferToInt32(size_buffer, kTagSizeBytes));
+    uint32_t tag_size = SynchsafeToUInt32(BufferToUInt32(size_buffer, kTagSizeBytes));
+    uint32_t extended_header_size = 0;
 
-    return new TagHeader(version, revision, flags, tag_size);
+    if (HasExtendedHeader(flags)) {
+        char extended_header_size_buffer[kExtendedHeaderSizeBytes];
+        stream.read(extended_header_size_buffer, kExtendedHeaderSizeBytes);
+        extended_header_size = SynchsafeToUInt32(BufferToUInt32(extended_header_size_buffer, kExtendedHeaderSizeBytes));
+    }
+
+    return new TagHeader(version, revision, flags, tag_size, extended_header_size);
 }

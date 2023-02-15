@@ -1,6 +1,7 @@
 #pragma once
 
-#include "tools/tag_header.h"
+#include "tools/tag.h"
+#include "tools/frame.h"
 
 #include <filesystem>
 
@@ -11,9 +12,9 @@ public:
     Manipulator& operator=(const Manipulator& other) = delete;
     ~Manipulator();
 
-    void ReadTagHeader();
-    void Debug() const;
+    void ReadTag();
+    // void Debug() const;
 private:
     std::filesystem::path file_;
-    TagHeader* header_;
+    Tag* tag_;
 };
