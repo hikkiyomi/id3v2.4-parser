@@ -89,6 +89,22 @@ Frame* ReadFrame(std::ifstream& stream) {
         return new USLT(header, data);
     } else if (header->CompareID("SYLT", 4)) {
         return new SYLT(header, data);
+    } else if (header->CompareID("COMM", 4)) {
+        return new COMM(header, data);
+    } else if (header->CompareID("RVA2", 4)) {
+        return new RVA2(header, data);
+    } else if (header->CompareID("EQU2", 4)) {
+        return new EQU2(header, data);
+    } else if (header->CompareID("PCNT", 4)) {
+        return new PCNT(header, data);
+    } else if (header->CompareID("POPM", 4)) {
+        return new POPM(header, data);
+    } else if (header->CompareID("RBUF", 4)) {
+        return new RBUF(header, data);
+    } else if (header->CompareID("LINK", 4)) {
+        return new LINK(header, data);
+    } else if (header->CompareID("POSS", 4)) {
+        return new POSS(header, data);
     }
 
     return new Frame(header, data);

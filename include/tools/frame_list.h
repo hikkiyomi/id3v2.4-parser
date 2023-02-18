@@ -64,3 +64,59 @@ public:
 
     void PrintTo(std::ofstream& stream) const;
 };
+
+class COMM : public Frame {
+public:
+    COMM(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class RVA2 : public Frame {
+public:
+    RVA2(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class EQU2 : public Frame {
+public:
+    EQU2(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class PCNT : public Frame {
+public:
+    PCNT(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class POPM : public Frame {
+public:
+    POPM(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class RBUF : public Frame {
+public:
+    RBUF(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class LINK : public Frame {
+public:
+    LINK(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class POSS : public Frame {
+public:
+    POSS(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};

@@ -3,9 +3,11 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 constexpr char kFalseSyncByte = static_cast<char>(0xFF);
 std::map<char, std::string> kEventType;
+
 const std::string kContentType[] = {
     "is other",
     "is lyrics",
@@ -16,6 +18,18 @@ const std::string kContentType[] = {
     "is trivia/\'pop up\' information",
     "is URLs to webpages",
     "is URLs to images"
+};
+
+const std::string kTypeOfChannel[] = {
+    "Other",
+    "Master volume",
+    "Front right",
+    "Front left",
+    "Back right",
+    "Back left",
+    "Front centre",
+    "Back centre",
+    "Subwoofer"
 };
 
 void CalculateEventType() {
@@ -399,6 +413,358 @@ void SYLT::PrintTo(std::ofstream& stream) const {
         stream << "[Time: " << size << "]: " << text << "\n";
     }
 
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+COMM::COMM(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void COMM::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+    
+    std::string encoding = GetEncoding(data_);
+    std::string language;
+
+    for (size_t i = 1; i <= 3; ++i) {
+        language.push_back(data_[i]);
+    }
+
+    std::string short_content;
+    std::string text;
+    bool change = false;
+    bool unsync = IsUnsync(header_->GetFlags());
+
+    for (size_t i = 4; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            change = true;
+
+            continue;
+        }
+
+        if (!change) {
+            short_content += data_[i];
+        } else {
+            text += data_[i];
+        }
+    }
+
+    stream << "Encoding: " << encoding << "\n";
+    stream << "Language: " << language << "\n";
+    stream << "Short content description: " << short_content << "\n";
+    stream << "Text: " << text << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+RVA2::RVA2(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void RVA2::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    size_t i = 0;
+
+    stream << "Identification: ";
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    stream << "\nType of channel: " << kTypeOfChannel[data_[i]] << "\n";
+
+    int16_t volume_adjustment = 0;
+    volume_adjustment = (volume_adjustment << 8) | static_cast<uint8_t>(data_[i + 1]);
+    volume_adjustment = (volume_adjustment << 8) | static_cast<uint8_t>(data_[i + 2]);
+
+    stream << "Volume adjustment: " << volume_adjustment << "\n";
+
+    uint8_t bits_represent = static_cast<uint8_t>(data_[i + 3]);
+    size_t bytes_needed = (bits_represent + 7) / 8;
+
+    i += 4;
+
+    uint32_t peak_volume = 0;
+
+    for (int length = 0; length < bytes_needed; ++length) {
+        peak_volume = (peak_volume << 8) | data_[i];
+        ++i;
+    }
+
+    stream << "Bits representing peak: " << bits_represent << "\n";
+    stream << "Peak volume: " << peak_volume << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+EQU2::EQU2(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void EQU2::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    stream << "Interpolation method: ";
+
+    if (data_[0] == 0x00) {
+        stream << "Band";
+    } else if (data_[0] == 0x01) {
+        stream << "Linear";
+    } else {
+        stream << "Unknown";
+    }
+
+    stream << "\nIdentification: ";
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    size_t i = 1;
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    uint16_t freq = 0;
+    int16_t adjustment = 0;
+
+    freq = (freq << 8) | static_cast<uint8_t>(data_[i]);
+    freq = (freq << 8) | static_cast<uint8_t>(data_[i + 1]);
+    adjustment = (adjustment << 8) | static_cast<uint8_t>(data_[i + 2]);
+    adjustment = (adjustment << 8) | static_cast<uint8_t>(data_[i + 3]);
+
+    stream << "Frequency: " << freq << "\n";
+    stream << "Volume adjustment: " << adjustment << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+PCNT::PCNT(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void PCNT::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    uint64_t counter = 0;
+    bool unsync = IsUnsync(header_->GetFlags());
+
+    for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00 && unsync && i > 0 && data_[i - 1] == kFalseSyncByte) {
+            continue;
+        }
+
+        counter = (counter << 8) | static_cast<uint8_t>(data_[i]);
+    }
+
+    stream << "Play counter: " << counter << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+POPM::POPM(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void POPM::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    size_t i = 0;
+
+    stream << "Email to user: ";
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+            
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    stream << "\n";
+
+    uint8_t rating = static_cast<uint8_t>(data_[i]);
+    uint64_t counter = 0;
+    ++i;
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        counter = (counter << 8) | static_cast<uint8_t>(data_[i]);
+    }
+
+    stream << "Rating: " << rating << "\n";
+    stream << "Counter: " << counter << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+RBUF::RBUF(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void RBUF::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    uint32_t buffer_size = 0;
+    uint8_t flag = 0;
+    uint32_t offset = 0;
+
+    buffer_size = (buffer_size << 8) | good_data[0];
+    buffer_size = (buffer_size << 8) | good_data[1];
+    buffer_size = (buffer_size << 8) | good_data[2];
+    flag = good_data[3];
+    offset = (offset << 8) | good_data[4];
+    offset = (offset << 8) | good_data[5];
+    offset = (offset << 8) | good_data[6];
+    offset = (offset << 8) | good_data[7];
+
+    stream << "Buffer size: " << buffer_size << "\n";
+    stream << "Embedded info flag: " << flag << "\n";
+    stream << "Offset to next tag: " << offset << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+LINK::LINK(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void LINK::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    std::string url;
+    size_t i = 4;
+
+    for (; i < good_data.size(); ++i) {
+        if (good_data[i] == 0x00) {
+            ++i;
+
+            break;
+        }
+
+        url += good_data[i];
+    }
+
+    stream << "Frame identifier: " << good_data[0] << good_data[1] << good_data[2] << good_data[3] << "\n";
+    stream << "URL: " << url << "\n";
+    stream << "ID and additional data: ";
+
+    for (; i < good_data.size(); ++i) {
+        stream.put(good_data[i]);
+    }
+
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+POSS::POSS(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void POSS::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    stream << "Time stamp format: ";
+
+    if (good_data[0] == 0x01) {
+        stream << "Absolute time, 32 bit sized, using MPEG frames as unit";
+    } else if (good_data[0] == 0x02) {
+        stream << "Absolute time, 32 bit sized, using milliseconds as unit";
+    } else {
+        stream << "Unknown";
+    }
+
+    stream << "\n";
+
+    uint64_t position = 0;
+
+    for (size_t i = 1; i < good_data.size(); ++i) {
+        position = (position << 8) | good_data[i];
+    }
+
+    stream << "Position: " << position << "\n";
     stream.put('\n');
     stream << "--------------\n";
 }

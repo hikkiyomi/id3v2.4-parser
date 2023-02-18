@@ -10,7 +10,7 @@ public:
     Frame(FrameHeader* header, char* data);
     Frame(const Frame& other) = delete;
     Frame& operator=(const Frame& other) = delete;
-    virtual ~Frame();
+    ~Frame();
 
     void AddFrameHeader(FrameHeader* header);
     void AddData(char* data);
