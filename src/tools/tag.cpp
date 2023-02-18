@@ -27,3 +27,9 @@ uint32_t Tag::GetExtendedHeaderSize() const {
 void Tag::AddFrame(Frame* frame) {
     frames_.push_back(frame);
 }
+
+void Tag::PrintFrames(std::ofstream& stream) const {
+    for (const auto& frame : frames_) {
+        frame->PrintTo(stream);
+    }
+}

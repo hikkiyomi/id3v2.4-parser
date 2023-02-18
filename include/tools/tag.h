@@ -16,6 +16,8 @@ public:
     uint32_t GetTagSize() const;
     uint32_t GetExtendedHeaderSize() const;
     void AddFrame(Frame* frame);
+
+    void PrintFrames(std::ofstream& stream) const;
 private:
     TagHeader* header_;
     std::list<Frame*> frames_;

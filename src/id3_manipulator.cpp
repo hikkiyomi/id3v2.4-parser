@@ -2,17 +2,19 @@
 
 #include <iostream>
 
-Manipulator::Manipulator(const std::filesystem::path& file)
-    : file_(file)
+Manipulator::Manipulator(const std::filesystem::path& file_in, const std::filesystem::path& file_out)
+    : file_in_(file_in)
+    , file_out_(file_out)
     , tag_(new Tag())
 {}
 
-Manipulator::~Manipulator() {
+Manipulator::~Manipulator()
+{
     delete tag_;
 }
 
 void Manipulator::ReadTag() {
-    std::ifstream stream(file_, std::ios::binary);
+    std::ifstream stream(file_in_, std::ios::binary);
 
     if (!stream.is_open()) {
         throw std::runtime_error("Cannot open the file.");
@@ -34,8 +36,11 @@ void Manipulator::ReadTag() {
 
         tag_->AddFrame(pending);
     }
+}
 
-    std::cout << "ehe";
+void Manipulator::PrintFrames() const {
+    std::ofstream stream(file_out_, std::ios::binary);
+    tag_->PrintFrames(stream);
 }
 
 // void Manipulator::Debug() const {

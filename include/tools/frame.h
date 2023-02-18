@@ -7,13 +7,17 @@
 class Frame {
 public:
     Frame();
+    Frame(FrameHeader* header, char* data);
     Frame(const Frame& other) = delete;
     Frame& operator=(const Frame& other) = delete;
-    ~Frame();
+    virtual ~Frame();
 
     void AddFrameHeader(FrameHeader* header);
     void AddData(char* data);
-private:
+
+    virtual void Split() const;
+    virtual void PrintTo(std::ofstream& stream) const;
+protected:
     FrameHeader* header_;
     char* data_;
 };
