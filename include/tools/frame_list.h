@@ -120,3 +120,45 @@ public:
 
     void PrintTo(std::ofstream& stream) const;
 };
+
+class USER : public Frame {
+public:
+    USER(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class OWNE : public Frame {
+public:
+    OWNE(FrameHeader* header, char* data);
+    
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class COMR : public Frame {
+public:
+    COMR(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class RegistrationFrame : public Frame {
+public:
+    RegistrationFrame(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class PRIV : public Frame {
+public:
+    PRIV(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};
+
+class SEEK : public Frame {
+public:
+    SEEK(FrameHeader* header, char* data);
+
+    void PrintTo(std::ofstream& stream) const;
+};

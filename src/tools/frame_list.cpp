@@ -32,6 +32,18 @@ const std::string kTypeOfChannel[] = {
     "Subwoofer"
 };
 
+const std::string kReceivedAs[] = {
+    "Other",
+    "Standard CD album with other songs",
+    "Compressed audio on CD",
+    "File over the Internet",
+    "Stream over the Internet",
+    "As note sheets",
+    "As note sheets in a book with other sheets",
+    "Music on other media",
+    "Non-musical merchandise"
+};
+
 void CalculateEventType() {
     kEventType[0x00] = "padding (has no meaning)";
     kEventType[0x01] = "end of initial silence";
@@ -615,7 +627,7 @@ void POPM::PrintTo(std::ofstream& stream) const {
 
     stream << "\n";
 
-    uint8_t rating = static_cast<uint8_t>(data_[i]);
+    uint16_t rating = static_cast<uint8_t>(data_[i]);
     uint64_t counter = 0;
     ++i;
 
@@ -765,6 +777,295 @@ void POSS::PrintTo(std::ofstream& stream) const {
     }
 
     stream << "Position: " << position << "\n";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+USER::USER(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void USER::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    stream << "Text encoding: ";
+
+    if (good_data[0] == 0x00) {
+        stream << "ISO-8859-1";
+    } else if (good_data[0] == 0x01) {
+        stream << "UTF-16";
+    } else if (good_data[0] == 0x02) {
+        stream << "UTF-16BE";
+    } else if (good_data[0] == 0x03) {
+        stream << "UTF-8";
+    } else {
+        stream << "Unknown";
+    }
+
+    stream << "\nLanguage: " << good_data[1] << good_data[2] << good_data[3] << "\n";
+    stream << "The actual text: ";
+
+    for (size_t i = 4; i < header_->GetFrameSize(); ++i) {
+        stream << data_[i];
+    }
+
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+OWNE::OWNE(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void OWNE::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+
+    stream << "Text encoding: ";
+
+    if (data_[0] == 0x00) {
+        stream << "ISO-8859-1";
+    } else if (data_[0] == 0x01) {
+        stream << "UTF-16";
+    } else if (data_[0] == 0x02) {
+        stream << "UTF-16BE";
+    } else if (data_[0] == 0x03) {
+        stream << "UTF-8";
+    } else {
+        stream << "Unknown";
+    }
+
+    size_t i = 1;
+    stream << "\nPrice paid: ";
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    stream << "\nDate of purchase: ";
+
+    for (size_t length = 0; length < 8;) {
+        if (data_[i] == 0x00 && unsync && data_[i - 1] == kFalseSyncByte) {
+            continue;
+        }
+
+        stream.put(data_[i]);
+        ++length;
+    }
+
+    stream << "\nSeller: ";
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        stream.put(data_[i]);
+    }
+
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+COMR::COMR(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void PrintDataUntilNull(std::ofstream& stream, FrameHeader* header_, const std::vector<uint8_t> good_data, size_t& i) {
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (good_data[i] == 0x00) {
+            ++i;
+            break;
+        }
+
+        stream.put(good_data[i]);
+    }
+}
+
+void COMR::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    stream << "Text encoding: ";
+
+    if (data_[0] == 0x00) {
+        stream << "ISO-8859-1";
+    } else if (data_[0] == 0x01) {
+        stream << "UTF-16";
+    } else if (data_[0] == 0x02) {
+        stream << "UTF-16BE";
+    } else if (data_[0] == 0x03) {
+        stream << "UTF-8";
+    } else {
+        stream << "Unknown";
+    }
+
+    size_t i = 1;
+
+    stream << "\nPrice string: ";
+    PrintDataUntilNull(stream, header_, good_data, i);
+
+    stream << "\nValid until: ";
+
+    for (size_t length = 0; length < 8; ++length) {
+        stream.put(good_data[i]);
+        ++i;
+    }
+
+    stream << "\nContact URL: ";
+    PrintDataUntilNull(stream, header_, good_data, i);
+
+    stream << "\nReceived as: " << kReceivedAs[good_data[i]] << "\n";
+    ++i;
+
+    stream << "\nName of seller: ";
+    PrintDataUntilNull(stream, header_, good_data, i);
+
+    stream << "\nDescription: ";
+    PrintDataUntilNull(stream, header_, good_data, i);
+
+    stream << "\nPicture MIME type: ";
+    PrintDataUntilNull(stream, header_, good_data, i);
+
+    stream << "\nSeller logo: binary data cannot be represented :(";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+RegistrationFrame::RegistrationFrame(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void RegistrationFrame::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    size_t i = 0;
+
+    stream << "Identifier: ";
+
+    for (; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    stream << "\nSymbol: " << data_[i];
+    stream << "\nData: binary data cannot be represented :(";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+PRIV::PRIV(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void PRIV::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+
+    stream << "Owner identifier: ";
+
+    for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+        if (data_[i] == 0x00) {
+            if (unsync && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            ++i;
+
+            break;
+        }
+
+        stream.put(data_[i]);
+    }
+
+    stream << "\nThe private data: binary data cannot be represented :(";
+    stream.put('\n');
+    stream << "--------------\n";
+}
+
+SEEK::SEEK(FrameHeader* header, char* data)
+    : Frame(header, data)
+{}
+
+void SEEK::PrintTo(std::ofstream& stream) const {
+    header_->PrintInfo(stream);
+
+    bool unsync = IsUnsync(header_->GetFlags());
+    std::vector<uint8_t> good_data;
+
+    if (unsync) {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            if (data_[i] == 0x00 && i > 0 && data_[i - 1] == kFalseSyncByte) {
+                continue;
+            }
+
+            good_data.push_back(data_[i]);
+        }
+    } else {
+        for (size_t i = 0; i < header_->GetFrameSize(); ++i) {
+            good_data.push_back(data_[i]);
+        }
+    }
+
+    uint32_t offset = 0;
+
+    offset = (offset << 8) | good_data[0];
+    offset = (offset << 8) | good_data[1];
+    offset = (offset << 8) | good_data[2];
+    offset = (offset << 8) | good_data[3];
+
+    stream << "Minimum offset to next tag: " << offset;
     stream.put('\n');
     stream << "--------------\n";
 }

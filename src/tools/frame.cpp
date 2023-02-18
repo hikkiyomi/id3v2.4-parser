@@ -105,6 +105,18 @@ Frame* ReadFrame(std::ifstream& stream) {
         return new LINK(header, data);
     } else if (header->CompareID("POSS", 4)) {
         return new POSS(header, data);
+    } else if (header->CompareID("USER", 4)) {
+        return new USER(header, data);
+    } else if (header->CompareID("OWNE", 4)) {
+        return new OWNE(header, data);
+    } else if (header->CompareID("COMR", 4)) {
+        return new COMR(header, data);
+    } else if (header->CompareID("ENCR", 4) || header->CompareID("GRID", 4)) {
+        return new RegistrationFrame(header, data);
+    } else if (header->CompareID("PRIV", 4)) {
+        return new PRIV(header, data);
+    } else if (header->CompareID("SEEK", 4)) {
+        return new SEEK(header, data);
     }
 
     return new Frame(header, data);
