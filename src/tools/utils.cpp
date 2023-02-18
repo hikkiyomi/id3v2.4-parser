@@ -24,3 +24,7 @@ uint32_t SynchsafeToUInt32(const uint32_t size_sync) {
 
     return result;
 }
+
+bool IsUnsync(const char* flags) {
+    return (flags[1] >> 1) & 1;
+}

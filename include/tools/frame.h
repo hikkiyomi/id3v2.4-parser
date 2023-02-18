@@ -15,7 +15,6 @@ public:
     void AddFrameHeader(FrameHeader* header);
     void AddData(char* data);
 
-    virtual void Split() const;
     virtual void PrintTo(std::ofstream& stream) const;
 protected:
     FrameHeader* header_;

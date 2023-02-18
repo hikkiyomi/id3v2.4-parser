@@ -24,7 +24,7 @@ uint32_t FrameHeader::GetFrameSize() const {
     return frame_size_;
 }
 
-std::vector<std::string> GetFlags(const char* flags) {
+std::vector<std::string> GetTextFlags(const char* flags) {
     char c = (flags[0] >> 4) & 1;
 
     char h = (flags[1] >> 6) & 1;
@@ -73,7 +73,7 @@ void FrameHeader::PrintInfo(std::ofstream& stream) const {
     stream << "Frame size: " << frame_size_ << "\n";
     stream << "Flags: ";
 
-    std::vector<std::string> flags = GetFlags(flags_);
+    std::vector<std::string> flags = GetTextFlags(flags_);
 
     if (flags.size() == 0) {
         stream << "No flags";
@@ -88,6 +88,16 @@ void FrameHeader::PrintInfo(std::ofstream& stream) const {
     }
 
     stream << "\n\n";
+}
+
+std::string FrameHeader::GetStringIdentifier() const {
+    std::string result;
+
+    for (size_t i = 0; i < kFrameHeaderIdSize; ++i) {
+        result.push_back(id_[i]);
+    }
+
+    return result;
 }
 
 FrameHeader* ReadFrameHeader(std::ifstream& stream) {
@@ -109,6 +119,10 @@ FrameHeader* ReadFrameHeader(std::ifstream& stream) {
     uint32_t size = SynchsafeToUInt32(BufferToUInt32(size_buffer, kFrameHeaderSizeBuffer));
 
     return new FrameHeader(id, size, flags);
+}
+
+const char* FrameHeader::GetFlags() const {
+    return flags_;
 }
 
 bool FrameHeader::CompareID(char* id, size_t n) const {

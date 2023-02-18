@@ -18,7 +18,9 @@ public:
 
     uint32_t GetFrameSize() const;
     void PrintInfo(std::ofstream& stream) const;
+    std::string GetStringIdentifier() const;
     
+    const char* GetFlags() const;
     bool CompareID(char* id, size_t n) const;
 private:
     char id_[kFrameHeaderIdSize];
