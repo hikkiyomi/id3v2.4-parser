@@ -2,9 +2,10 @@
 
 #include <iostream>
 
-Manipulator::Manipulator(const std::filesystem::path& file_in, const std::filesystem::path& file_out)
+Manipulator::Manipulator(const std::filesystem::path& file_in, const std::filesystem::path& file_out, const std::set<std::string>& required_frames)
     : file_in_(file_in)
     , file_out_(file_out)
+    , required_frames_(required_frames)
     , tag_(new Tag())
 {}
 
@@ -34,7 +35,9 @@ void Manipulator::ReadTag() {
             break;
         }
 
-        tag_->AddFrame(pending);
+        if (required_frames_.empty() || required_frames_.find(pending->GetStringIdentifier()) != required_frames_.end()) {
+            tag_->AddFrame(pending);
+        }
     }
 }
 

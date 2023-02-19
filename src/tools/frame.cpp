@@ -41,6 +41,10 @@ void Frame::AddData(char* data) {
     data_ = data;
 }
 
+std::string Frame::GetStringIdentifier() const {
+    return header_->GetStringIdentifier();
+}
+
 void Frame::PrintTo(std::ofstream& stream) const {
     header_->PrintInfo(stream);
 

@@ -14,6 +14,7 @@ public:
 
     void AddFrameHeader(FrameHeader* header);
     void AddData(char* data);
+    std::string GetStringIdentifier() const;
 
     virtual void PrintTo(std::ofstream& stream) const;
 protected:
