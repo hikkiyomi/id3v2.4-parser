@@ -86,6 +86,17 @@ void CalculateEventType() {
     kEventType[0xFF] = "one more byte of events follows (all the following bytes with the value $FF have the same function)";
 }
 
+void PrintDataUntilNull(std::ofstream& stream, FrameHeader* header_, const std::vector<uint8_t> good_data, size_t& i) {
+    for (; i < good_data.size(); ++i) {
+        if (good_data[i] == 0x00) {
+            ++i;
+            break;
+        }
+
+        stream.put(good_data[i]);
+    }
+}
+
 UFID::UFID(FrameHeader* header, char* data)
     : Frame(header, data)
 {}
@@ -894,17 +905,6 @@ void OWNE::PrintTo(std::ofstream& stream) const {
 COMR::COMR(FrameHeader* header, char* data)
     : Frame(header, data)
 {}
-
-void PrintDataUntilNull(std::ofstream& stream, FrameHeader* header_, const std::vector<uint8_t> good_data, size_t& i) {
-    for (; i < header_->GetFrameSize(); ++i) {
-        if (good_data[i] == 0x00) {
-            ++i;
-            break;
-        }
-
-        stream.put(good_data[i]);
-    }
-}
 
 void COMR::PrintTo(std::ofstream& stream) const {
     header_->PrintInfo(stream);
